@@ -18,6 +18,8 @@ cd flutter-no-debugprint-release
 ./install.sh
 ```
 
+The installer will ask if you want to remove the cloned directory. Say **y** if you don't need it anymore — the wrapper is copied to `~/.flutter-ndrelease/`.
+
 Then restart your terminal or run:
 ```bash
 source ~/.bashrc  # or ~/.zshrc
@@ -30,6 +32,8 @@ git clone <repo-url>
 cd flutter-no-debugprint-release
 install.bat
 ```
+
+The installer will ask if you want to remove the cloned directory. Say **y** if you don't need it anymore — the wrapper is copied to `%USERPROFILE%\.flutter-ndrelease\`.
 
 Then restart your terminal.
 
@@ -68,6 +72,14 @@ flutter build linux --release      # Normal release (debug prints intact)
 flutter run                          # Debug mode
 flutter pub get                     # Works as usual
 ```
+
+### Uninstall
+
+```bash
+flutter wrapper-uninstall -y
+```
+
+This removes the wrapper directory. You may also want to clean up the PATH entry in your shell config (`.bashrc` / `.zshrc`) or Windows environment variables.
 
 ## How It Works
 

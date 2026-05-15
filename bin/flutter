@@ -26,6 +26,30 @@ if [[ -z "$REAL_FLUTTER" ]]; then
     exit 1
 fi
 
+# Handle uninstall command
+if [[ "$1" == "wrapper-uninstall" ]]; then
+    CONFIRM=false
+    for arg in "$@"; do
+        if [[ "$arg" == "-y" || "$arg" == "--yes" ]]; then
+            CONFIRM=true
+        fi
+    done
+    
+    if [[ "$CONFIRM" != true ]]; then
+        read -r -p "Uninstall flutter-no-debugprint-release wrapper? [y/N] " answer
+        if [[ ! "$answer" =~ ^[Yy]$ ]]; then
+            echo "Cancelled."
+            exit 0
+        fi
+    fi
+    
+    WRAPPER_DIR="$SCRIPT_DIR"
+    rm -rf "$WRAPPER_DIR"
+    echo "Wrapper removed from $WRAPPER_DIR"
+    echo "Remove the PATH entry from your shell config (.bashrc/.zshrc) manually if desired."
+    exit 0
+fi
+
 # Parse arguments
 BUILD_CMD=false
 HAS_NDRELEASE=false

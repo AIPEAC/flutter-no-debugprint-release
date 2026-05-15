@@ -41,14 +41,20 @@ else
     echo "Wrapper directory already in PATH."
 fi
 
+# Ask if user wants to remove the cloned directory
+echo ""
+read -r -p "Remove the cloned directory ($SCRIPT_DIR)? [y/N] " answer
+if [[ "$answer" =~ ^[Yy]$ ]]; then
+    rm -rf "$SCRIPT_DIR"
+    echo "Removed $SCRIPT_DIR"
+fi
+
 echo ""
 echo "Installation complete!"
 echo ""
 echo "Usage:"
 echo "  flutter build <target> --ndrelease"
 echo ""
-echo "Examples:"
-echo "  flutter build linux --ndrelease"
-echo "  flutter build windows --ndrelease"
-echo "  flutter build macos --ndrelease"
+echo "Uninstall:"
+echo "  flutter wrapper-uninstall -y"
 echo ""

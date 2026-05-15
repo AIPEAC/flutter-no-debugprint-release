@@ -30,13 +30,18 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo.
+set /p answer="Remove the cloned directory (%SCRIPT_DIR%)? [y/N] "
+if /I "%answer%"=="y" (
+    rmdir /S /Q "%SCRIPT_DIR%"
+    echo Removed %SCRIPT_DIR%
+)
+
+echo.
 echo Installation complete!
 echo.
 echo Usage:
 echo   flutter build ^<target^> --ndrelease
 echo.
-echo Examples:
-echo   flutter build windows --ndrelease
-echo   flutter build linux --ndrelease
-echo   flutter build macos --ndrelease
+echo Uninstall:
+echo   flutter wrapper-uninstall -y
 echo.

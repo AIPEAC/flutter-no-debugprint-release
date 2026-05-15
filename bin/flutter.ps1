@@ -22,6 +22,22 @@ if (-not $realFlutter) {
     exit 1
 }
 
+# Handle uninstall command
+if ($args[0] -eq 'wrapper-uninstall') {
+    $confirm = $args -contains '-y' -or $args -contains '--yes'
+    if (-not $confirm) {
+        $answer = Read-Host "Uninstall flutter-no-debugprint-release wrapper? [y/N]"
+        if ($answer -notmatch '^[Yy]$') {
+            Write-Host "Cancelled."
+            exit 0
+        }
+    }
+    Remove-Item -Recurse -Force $scriptDir
+    Write-Host "Wrapper removed from $scriptDir"
+    Write-Host "Remove the PATH entry from your environment variables manually if desired."
+    exit 0
+}
+
 # Parse arguments
 $buildCmd = $false
 $hasNdrelease = $false
