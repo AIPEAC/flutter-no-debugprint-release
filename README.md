@@ -92,6 +92,123 @@ This removes the wrapper directory. You may also want to clean up the PATH entry
 
 If the build crashes or the terminal dies, the shadow directory may remain in `build/ndrelease_shadow/`. It is harmless and can be removed with `flutter clean`.
 
+## CI / CD Usage
+
+### GitHub Actions — Multi-Platform
+
+Copy this into your `.github/workflows/build.yml`:
+
+```yaml
+name: Build All Platforms (No Debug Prints)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install flutter-no-debugprint-release
+        run: |
+          git clone https://github.com/your-repo/flutter-no-debugprint-release.git /tmp/ndrelease
+          cd /tmp/ndrelease
+          ./install.sh <<< "y"
+          echo "$HOME/.flutter-ndrelease" >> $GITHUB_PATH
+      - name: Build Android APK (stripped)
+        run: flutter build apk --ndrelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/ndrelease/app/outputs/flutter-apk/app-release.apk
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install flutter-no-debugprint-release
+        run: |
+          git clone https://github.com/your-repo/flutter-no-debugprint-release.git /tmp/ndrelease
+          cd /tmp/ndrelease
+          ./install.sh <<< "y"
+          echo "$HOME/.flutter-ndrelease" >> $GITHUB_PATH
+      - name: Build iOS (stripped)
+        run: flutter build ios --ndrelease --no-codesign
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          path: build/ndrelease/ios/iphoneos/Runner.app
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev
+      - name: Install flutter-no-debugprint-release
+        run: |
+          git clone https://github.com/your-repo/flutter-no-debugprint-release.git /tmp/ndrelease
+          cd /tmp/ndrelease
+          ./install.sh <<< "y"
+          echo "$HOME/.flutter-ndrelease" >> $GITHUB_PATH
+      - name: Build Linux (stripped)
+        run: flutter build linux --ndrelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-bundle
+          path: build/ndrelease/linux/x64/release/bundle/
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install flutter-no-debugprint-release
+        shell: bash
+        run: |
+          git clone https://github.com/your-repo/flutter-no-debugprint-release.git /tmp/ndrelease
+          cd /tmp/ndrelease
+          ./install.sh <<< "y"
+          echo "$HOME/.flutter-ndrelease" >> $GITHUB_PATH
+      - name: Build Windows (stripped)
+        run: flutter build windows --ndrelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-bundle
+          path: build/ndrelease/windows/x64/release/bundle/
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install flutter-no-debugprint-release
+        run: |
+          git clone https://github.com/your-repo/flutter-no-debugprint-release.git /tmp/ndrelease
+          cd /tmp/ndrelease
+          ./install.sh <<< "y"
+          echo "$HOME/.flutter-ndrelease" >> $GITHUB_PATH
+      - name: Build macOS (stripped)
+        run: flutter build macos --ndrelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-bundle
+          path: build/ndrelease/macos/Build/Products/Release/
+```
+
 ## Requirements
 
 - Flutter SDK installed and in PATH
