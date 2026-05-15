@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# flutter-no-debugprint-release wrapper
+# Intercepts `flutter build <target> --ndrelease` and performs a shadow build
+# with all debugPrint() and print() calls stripped from the source.
+
+set -euo pipefail
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Find the REAL flutter binary by temporarily removing our directory from PATH
+REAL_PATH="${PATH//:$SCRIPT_DIR:/:}"
+REAL_PATH="${REAL_PATH#:}"
+REAL_PATH="${REAL_PATH%:}"
+
+REAL_FLUTTER=""
+for dir in ${REAL_PATH//:/ }; do
+    if [[ -x "$dir/flutter" && "$dir/flutter" != "$SCRIPT_DIR/flutter" ]]; then
+        REAL_FLUTTER="$dir/flutter"
+        break
+    fi
+done
+
+if [[ -z "$REAL_FLUTTER" ]]; then
+    echo "Error: Could not find real flutter binary in PATH" >&2
+    exit 1
+fi
+
+# Parse arguments
+BUILD_CMD=false
+HAS_NDRELEASE=false
+NEW_ARGS=()
+
+for arg in "$@"; do
+    if [[ "$arg" == "build" ]]; then
+        BUILD_CMD=true
+    fi
+    if [[ "$arg" == "--ndrelease" || "$arg" == "--no-debug-release" ]]; then
+        HAS_NDRELEASE=true
+        continue
+    fi
+    NEW_ARGS+=("$arg")
+done
+
+# If not a build command with --ndrelease, pass through to real flutter
+if [[ "$BUILD_CMD" != true || "$HAS_NDRELEASE" != true ]]; then
+    exec "$REAL_FLUTTER" "$@"
+fi
+
+# Ensure --release is present if no build mode flag was given
+BUILD_MODE_FLAGS=(--debug --profile --release --jit-release)
+has_build_mode=false
+for flag in "${BUILD_MODE_FLAGS[@]}"; do
+    if [[ " ${NEW_ARGS[*]} " == *" $flag "* ]]; then
+        has_build_mode=true
+        break
+    fi
+done
+if [[ "$has_build_mode" != true ]]; then
+    NEW_ARGS+=("--release")
+fi
+
+# ============================================================================
+# Shadow build for --ndrelease
+# ============================================================================
+
+PROJECT_ROOT="$(pwd)"
+SHADOW_DIR="$PROJECT_ROOT/build/ndrelease_shadow"
+OUTPUT_DIR="$PROJECT_ROOT/build/ndrelease"
+
+cleanup() {
+    local exit_code=$?
+    rm -rf "$SHADOW_DIR"
+    exit $exit_code
+}
+trap cleanup EXIT
+
+# Clean up any existing shadow
+rm -rf "$SHADOW_DIR"
+mkdir -p "$SHADOW_DIR"
+
+# Copy project to shadow, excluding build artifacts
+cd "$PROJECT_ROOT"
+find . -type f \
+    -not -path './build/*' \
+    -not -path './.dart_tool/*' \
+    -not -path './.git/*' \
+    -not -path './ios/Pods/*' \
+    -not -path './android/.gradle/*' \
+    -not -path './android/app/build/*' \
+    -not -path './.idea/*' \
+    -not -name '*.iml' \
+    -print0 | while IFS= read -r -d '' file; do
+    target="$SHADOW_DIR/$file"
+    mkdir -p "$(dirname "$target")"
+    cp -a "$file" "$target"
+done
+
+# Strip debugPrint and print from all .dart files in shadow/lib
+if [[ -d "$SHADOW_DIR/lib" ]]; then
+    find "$SHADOW_DIR/lib" -name "*.dart" -type f -print0 | while IFS= read -r -d '' file; do
+        if [[ "$(uname)" == "Darwin" ]]; then
+            sed -i.bak -E '/^[[:space:]]*debugPrint\(.*\);[[:space:]]*$/d' "$file"
+            sed -i.bak -E '/^[[:space:]]*print\(.*\);[[:space:]]*$/d' "$file"
+            rm -f "$file.bak"
+        else
+            sed -i -E '/^[[:space:]]*debugPrint\(.*\);[[:space:]]*$/d' "$file"
+            sed -i -E '/^[[:space:]]*print\(.*\);[[:space:]]*$/d' "$file"
+        fi
+    done
+fi
+
+# Run flutter build in shadow
+cd "$SHADOW_DIR"
+"$REAL_FLUTTER" "${NEW_ARGS[@]}"
+BUILD_EXIT=$?
+
+# Copy build outputs back
+if [[ $BUILD_EXIT -eq 0 && -d "$SHADOW_DIR/build" ]]; then
+    mkdir -p "$OUTPUT_DIR"
+    cp -a "$SHADOW_DIR/build/." "$OUTPUT_DIR/"
+fi
+
+exit $BUILD_EXIT
