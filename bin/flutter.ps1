@@ -4,6 +4,10 @@
 
 $scriptDir = (Resolve-Path (Split-Path -Parent $MyInvocation.MyCommand.Path)).Path
 
+function Show-Banner {
+    Write-Host "[flutter-no-debugprint-release wrapper active — uninstall: flutter wrapper-uninstall -y]" -ForegroundColor Yellow
+}
+
 # Find the REAL flutter binary (skip our own wrapper)
 $realFlutter = $null
 foreach ($cmd in @('flutter.bat', 'flutter')) {
@@ -36,6 +40,11 @@ if ($args[0] -eq 'wrapper-uninstall') {
     Write-Host "Wrapper removed from $scriptDir"
     Write-Host "Remove the PATH entry from your environment variables manually if desired."
     exit 0
+}
+
+# Show banner for help and doctor commands
+if ($args[0] -eq '-h' -or $args[0] -eq '--help' -or $args[0] -eq 'doctor') {
+    Show-Banner
 }
 
 # Parse arguments
@@ -76,6 +85,8 @@ if (-not $hasBuildMode) {
 # ============================================================================
 # Shadow build for --ndrelease
 # ============================================================================
+
+Show-Banner
 
 $projectRoot = Get-Location
 $shadowDir = Join-Path $projectRoot "build\ndrelease_shadow"

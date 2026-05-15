@@ -26,6 +26,10 @@ if [[ -z "$REAL_FLUTTER" ]]; then
     exit 1
 fi
 
+show_banner() {
+    echo "[flutter-no-debugprint-release wrapper active — uninstall: flutter wrapper-uninstall -y]" >&2
+}
+
 # Handle uninstall command
 if [[ "$1" == "wrapper-uninstall" ]]; then
     CONFIRM=false
@@ -48,6 +52,11 @@ if [[ "$1" == "wrapper-uninstall" ]]; then
     echo "Wrapper removed from $WRAPPER_DIR"
     echo "Remove the PATH entry from your shell config (.bashrc/.zshrc) manually if desired."
     exit 0
+fi
+
+# Show banner for help and doctor commands
+if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "doctor" ]]; then
+    show_banner
 fi
 
 # Parse arguments
@@ -87,6 +96,8 @@ fi
 # ============================================================================
 # Shadow build for --ndrelease
 # ============================================================================
+
+show_banner
 
 PROJECT_ROOT="$(pwd)"
 SHADOW_DIR="$PROJECT_ROOT/build/ndrelease_shadow"
